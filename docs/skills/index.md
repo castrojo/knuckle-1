@@ -12,6 +12,8 @@ description: Entry point for projectbluefin/knuckle skill tree. Load this first 
 3. **Disk identity via `/dev/disk/by-id`** — never trust `/dev/sdX` enumeration order.
 4. **Never log to stdout** — Bubble Tea owns it. Use `log/slog` with a file handler.
 5. **`just ci` is the gate** — tidy + fmt + vet + lint + vuln + race + cover-check + headless-test + shell-lint + build. Never `--no-verify`.
+6. **AI-authored commits must include `Assisted-by: <Model> via <Tool>`.**
+7. **Update `docs/skills/` when you learn something new** — new gotcha, recurring failure, or hard-won pattern belongs in the relevant skill file, in the same PR.
 
 ## Load on demand
 

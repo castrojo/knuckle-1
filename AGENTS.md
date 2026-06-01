@@ -5,6 +5,12 @@
 > **Bar:** CNCF-incubating rigor. Every change keeps `just ci` green, respects package
 > boundaries, and preserves the safety invariants below.
 
+## Skills — Start Here
+
+**[`docs/skills/index.md`](docs/skills/index.md)** is the entry point for all agent sub-skills. Load it first, then load the specific sub-skill for your task.
+
+Agents are expected to **improve the skills as they work** — if you discover a new gotcha, fix a recurring pattern, or learn something that would have saved time, add it to the appropriate `docs/skills/*.md` file in the same PR. Skills are community-maintained shared knowledge.
+
 ---
 
 ## What This Repo Is
@@ -134,6 +140,12 @@ tui      ← cmd/knuckle
 6. **Workflow files (`.github/workflows/*.yml`):** security-sensitive, cannot be auto-merged. Coordinate via PR description.
 7. **New external command?** Wire through `runner.Runner`. Period.
 8. **New disk-touching code?** Test in QEMU via `just vm` or `just vm-e2e`. Unit tests use `SpyRunner`.
+9. **AI-authored commits must include an `Assisted-by:` trailer:**
+   ```
+   Assisted-by: <Model name> via <Tool name>
+   ```
+   Example: `Assisted-by: Claude Sonnet 4.5 via GitHub Copilot`
+10. **Update `docs/skills/` when you learn something new.** New gotcha, recurring failure, or hard-won pattern → add it to the relevant skill file in the same PR.
 
 ---
 
