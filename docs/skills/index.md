@@ -27,3 +27,6 @@ description: Entry point for projectbluefin/knuckle skill tree. Load this first 
 | Butane-as-library rationale | `docs/BUTANE-DEPENDENCY.md` |
 | Coverage gaps, quality agent patterns, stale-issue gotchas | `docs/skills/quality.md` |
 | FCOS implementation order and dependency chain | `docs/skills/fcos.md` |
+| PR review workflow, tier classification, vm-e2e decision | `docs/skills/review.md` |
+| VM testing patterns, ISO architecture, QEMU gotchas | `docs/skills/testing.md` |
+| Release E2E gate, asset audit, known failure modes | `docs/skills/release.md` |

@@ -154,6 +154,9 @@ These docs live in `docs/` and improve continuously. Load the relevant one for y
 | Butane-as-library rationale | [`docs/BUTANE-DEPENDENCY.md`](docs/BUTANE-DEPENDENCY.md) |
 | Coverage gotchas, quality agent anti-patterns, stale issues | [`docs/skills/quality.md`](docs/skills/quality.md) |
 | FCOS epic dependency chain, implementation order | [`docs/skills/fcos.md`](docs/skills/fcos.md) |
+| PR review workflow, tier classification, vm-e2e | [`docs/skills/review.md`](docs/skills/review.md) |
+| VM testing patterns, ISO architecture, QEMU gotchas | [`docs/skills/testing.md`](docs/skills/testing.md) |
+| Release E2E gate, asset audit, known failure modes | [`docs/skills/release.md`](docs/skills/release.md) |
 
 ---
 

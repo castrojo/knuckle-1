@@ -31,6 +31,31 @@ Last:
 
 `cmd/knuckle/main.go` constructs the installer and bakery client **before** the OS is known. #638 adds the OS-dispatching factory so downstream issues (#639, #640, #641) have the interface to implement against. Starting any of those without #638 means rewriting the wiring twice.
 
+**Pattern for any feature that branches on user input from StepWelcome:** Use a `DispatchingInstaller` that holds both impls and delegates at `Install()` call time based on `cfg.OS`:
+
+```go
+installer = &install.DispatchingInstaller{
+    Flatcar: install.NewFlatcarInstaller(cmdRunner, logger),
+    FCOS:    install.NewFCOSInstaller(cmdRunner, logger),
+}
+```
+
+Same pattern applies to the bakery client — the wizard must call `FetchCatalog*` based on `cfg.OS` at `StepSysext`, not at startup.
+
+## FCOS ISO: use `coreos-installer iso customize`
+
+```bash
+# ✅ Correct: embed knuckle into FCOS live ISO
+coreos-installer iso customize \
+  --dest-ignition installer.ign \
+  --output out.iso fcos-live.iso
+
+# ❌ Wrong: `pxe customize` is for PXE images, not ISO
+coreos-installer pxe customize ...
+```
+
+FCOS live image runs `getty@tty1.service` with autologin for `core`. The knuckle service unit must add `Conflicts=getty@tty1.service` and `Before=getty@tty1.service` or the TUI will not render.
+
 ## coreos-installer vs flatcar-install
 
 | | `flatcar-install` | `coreos-installer` |

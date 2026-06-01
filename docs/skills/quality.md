@@ -56,6 +56,75 @@ grep -n "t\.Error" <file>          # check each: dereference after?
 grep -A2 "t\.Fatal" <file>         # check each: return present?
 ```
 
+### SA5011 pattern — always add `return` after `t.Fatal`
+
+`golangci-lint-action` in CI catches SA5011 (nil-deref after t.Fatal) even when `golangci-lint run ./...` locally reports clean. **Always add `return` immediately after every `t.Fatal` nil-check guard:**
+
+```go
+// WRONG — SA5011: golangci-lint catches this even when local lint passes
+if result == nil {
+    t.Fatal("expected non-nil result")
+}
+result.Field  // potential nil deref
+
+// CORRECT
+if result == nil {
+    t.Fatal("expected non-nil result")
+    return  // ← REQUIRED even though t.Fatal stops the test logically
+}
+result.Field
+```
+
+Failing to do this blocks the entire merge queue for all open PRs.
+
+### `t.Error` vs `t.Fatal` before dereference
+
+`t.Error` does not stop the test — it only marks it failed. Using `t.Error` before a field access panics if the value is nil:
+
+```go
+// WRONG — panics if m.err == nil
+if m.err == nil {
+    t.Error("expected error")
+}
+if !strings.Contains(m.err.Error(), "...") { // panics
+
+// CORRECT
+if m.err == nil {
+    t.Fatal("expected error")
+    return
+}
+if !strings.Contains(m.err.Error(), "...") {
+```
+
+### detectLocalSSHKeys: `UserHomeDir` error path is testable
+
+`os.UserHomeDir()` returns an error when `HOME=""` on Linux:
+
+```go
+t.Setenv("HOME", "")
+keys := detectLocalSSHKeys()  // triggers error path — returns nil
+```
+
+Use `t.Setenv` (auto-restored after test) rather than `os.Setenv` to avoid test pollution.
+
+## BATS test / script alignment — three rules
+
+When modifying `scripts/qa-test-pr.sh`, the BATS test suite greps the mock git log for literal strings. Follow these rules exactly:
+
+1. **`remove_worktree_path()` must unconditionally call `git worktree remove --force`** when the path exists on disk (not just when registered in `git worktree list`):
+   ```bash
+   if [[ -e "$path" ]]; then
+     git worktree remove --force "$path" 2>/dev/null || true
+     if [[ -e "$path" ]]; then rm -rf "$path"; fi
+   fi
+   ```
+2. **`--force` before path**: `git worktree remove --force "$path"` (not `"$path" --force`)
+3. **Use `git branch -D "$ref"` directly** for local branch cleanup — not `git update-ref -d || git branch -D` (the mock makes `update-ref` succeed, so the fallback is never reached)
+
+### Merged tests that break main
+
+When a test-first PR merges (tests for behavior not yet implemented), all subsequent PRs will fail BATS in CI. **Always run `bats scripts/tests/qa-test-pr.bats` locally on main immediately after any script-touching PR merges.**
+
 ## BATS test coverage — known gaps fixed in PR #675
 
 - `scripts/tests/qa-test-pr.bats` — `domain:iso` tier-3 routing was untested. Now covered.
