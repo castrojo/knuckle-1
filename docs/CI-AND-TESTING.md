@@ -36,24 +36,33 @@
 ## Coverage Gate
 
 `just cover-check` enforces per-package thresholds. Current numbers as of
-2026-05-28:
+2026-06-01 (PR #675):
 
-| Package                      | Now    | Gate | Aspiration (TEST-PLAN.md) |
-| ---------------------------- | ------ | ---- | ------------------------- |
-| `internal/model`             |  100%  | 100% | ≥ 90%                     |
-| `internal/iso`               |  100%  | 100% | (n/a)                     |
-| `internal/runner`            |  100%  | 100% | ≥ 80%                     |
-| `internal/demo`              |  100%  | 100% | (n/a)                     |
-| `internal/validate`          |  100%  | 100% | ≥ 95%                     |
-| `internal/probe`             |  100%  | 100% | ≥ 85%                     |
-| `internal/install`           |  100%  | 100% | ≥ 80%                     |
-| `internal/ignition`          |  100%  | 100% | ≥ 90%                     |
-| `internal/bakery`            |  100%  | 100% | ≥ 85%                     |
-| `scripts/catalog_check`      |  100%  | 100% | (n/a)                     |
-| `internal/wizard`            |  99.5% |  99% | ≥ 85%                     |
-| `internal/headless`          |  99%   |  99% | (n/a)                     |
-| `internal/tui`               |  98.7% |  98% | ≥ 85%                     |
-| `internal/github`            |  97%   |  96% | (n/a)                     |
+| Package                        | Now    | Gate | Aspiration (TEST-PLAN.md) |
+| ------------------------------ | ------ | ---- | ------------------------- |
+| `internal/model`               |  100%  | 100% | ≥ 90%                     |
+| `internal/iso`                 |  100%  | 100% | (n/a)                     |
+| `internal/runner`              |  100%  | 100% | ≥ 80%                     |
+| `internal/demo`                |  100%  | 100% | (n/a)                     |
+| `internal/validate`            |  100%  | 100% | ≥ 95%                     |
+| `internal/probe`               |  100%  | 100% | ≥ 85%                     |
+| `internal/install`             |  100%  | 100% | ≥ 80%                     |
+| `internal/ignition`            |  100%  | 100% | ≥ 90%                     |
+| `internal/bakery`              |  100%  | 100% | ≥ 85%                     |
+| `scripts/catalog_check`        |  100%  | 100% | (n/a)                     |
+| `cmd/compile-butane-fresh`     |  100%  | 100% | (n/a)                     |
+| `internal/github`              |  100%  |  96% | (n/a)                     |
+| `internal/wizard`              |  99%   |  99% | ≥ 85%                     |
+| `internal/headless`            |  99%   |  99% | (n/a)                     |
+| `internal/tui`                 |  99.7% |  99% | ≥ 85%                     |
+| `cmd/knuckle`                  |  86.1% |  85% | (n/a)                     |
+
+> **`internal/tui` remaining 0.3%:** `tea.Run()` (needs real PTY) and
+> `os.UserHomeDir()` failure (requires broken `/etc/passwd`). Both are
+> infeasible without dependency injection — do not chase them.
+>
+> **`cmd/knuckle` remaining ~14%:** TTY-gated TUI launch path. Infeasible
+> without PTY. The 85% gate captures all non-TTY branches.
 
 Gates are set conservatively below current numbers so CI fails on
 **regression**, not on aspirational drift. When a package's actual coverage

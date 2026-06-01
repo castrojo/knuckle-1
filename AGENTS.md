@@ -152,6 +152,8 @@ These docs live in `docs/` and improve continuously. Load the relevant one for y
 | Sysext catalog, Bakery support tiers, extension behavior | [`docs/SYSEXTS.md`](docs/SYSEXTS.md) |
 | Troubleshooting runbook, first-boot diagnostics | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Butane-as-library rationale | [`docs/BUTANE-DEPENDENCY.md`](docs/BUTANE-DEPENDENCY.md) |
+| Coverage gotchas, quality agent anti-patterns, stale issues | [`docs/skills/quality.md`](docs/skills/quality.md) |
+| FCOS epic dependency chain, implementation order | [`docs/skills/fcos.md`](docs/skills/fcos.md) |
 
 ---
 
