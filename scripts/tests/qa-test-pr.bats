@@ -286,6 +286,18 @@ teardown() {
   [[ "$output" == *"needs_boot=1"* ]]
 }
 
+@test "domain:iso routes to Tier 3 with needs_boot" {
+  export MOCK_GH_PR_JSON='{"title":"iso","headRefName":"feat/iso","labels":[{"name":"domain:iso"},{"name":"size:S"}],"body":"","author":{"login":"dev"}}'
+  export MOCK_PR_TITLE="iso"
+  export MOCK_PR_BRANCH="feat/iso"
+  export MOCK_PR_LABELS="domain:iso, size:S"
+  export MOCK_PR_SIZE="size:S"
+  export MOCK_GH_DIFF_FILES=""
+  run bash "$SCRIPT" 999 2>&1
+  [[ "$output" == *"tier=3"* ]]
+  [[ "$output" == *"needs_boot=1"* ]]
+}
+
 @test "swap label routes to Tier 3 with needs_boot" {
   export MOCK_GH_PR_JSON='{"title":"sw","headRefName":"feat/sw","labels":[{"name":"swap"},{"name":"size:S"}],"body":"","author":{"login":"dev"}}'
   export MOCK_PR_TITLE="sw"
