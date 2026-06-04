@@ -620,6 +620,14 @@ func TestCheckConsistency(t *testing.T) {
 			},
 			wantErr: "",
 		},
+		{
+			name: "nvidia driver rejected for FCOS",
+			modify: func(cfg *model.InstallConfig) {
+				cfg.OS = model.OSFCOS
+				cfg.NvidiaDriverVersion = "570-open"
+			},
+			wantErr: "not supported on FCOS",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

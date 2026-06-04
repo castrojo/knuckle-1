@@ -246,9 +246,18 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// Version
-	if err := validate.FlatcarVersion(c.Version); err != nil {
-		return fmt.Errorf("version: %w", err)
+	// Version — FCOS uses a different version scheme and coreos-installer does
+	// not support stream-based version pinning in v1; ignore with a warning.
+	// For Flatcar, validate MAJOR.MINOR.PATCH format.
+	if c.OS == model.OSFCOS {
+		if c.Version != "" {
+			// Warn via stderr; Validate has no logger. The installer also warns.
+			fmt.Fprintf(os.Stderr, "warning: version field is ignored for FCOS (not supported in v1)\n")
+		}
+	} else {
+		if err := validate.FlatcarVersion(c.Version); err != nil {
+			return fmt.Errorf("version: %w", err)
+		}
 	}
 
 	// Hostname
@@ -380,8 +389,11 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// NVIDIA driver version must be a known series
+	// NVIDIA driver version must be a known series; not supported on FCOS
 	if c.NvidiaDriverVersion != "" {
+		if c.OS == model.OSFCOS {
+			return fmt.Errorf("nvidia_driver_version: not supported on FCOS")
+		}
 		valid := false
 		for _, opt := range model.NvidiaDriverOptions {
 			if opt.ID == c.NvidiaDriverVersion {

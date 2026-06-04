@@ -69,6 +69,23 @@ This document is the authoritative reference for every field in that file.
 }
 ```
 
+### FCOS install
+
+```json
+{
+  "os": "fcos",
+  "channel": "stable",
+  "hostname": "fcos-node-1",
+  "disk": "/dev/disk/by-id/nvme-SAMSUNG_...",
+  "network": { "mode": "dhcp" },
+  "users": [{ "username": "core", "ssh_keys": ["ssh-ed25519 AAAA..."] }],
+  "dry_run": true
+}
+```
+
+> **FCOS limitations**: `version` pinning is not supported (ignored with a warning).
+> `nvidia_driver_version` must be omitted. `update_strategy: "etcd-lock"` is Flatcar-only.
+
 ---
 
 ## Full field reference
@@ -77,8 +94,9 @@ This document is the authoritative reference for every field in that file.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `channel` | string | no | `"stable"` | Flatcar release channel. One of `stable`, `beta`, `alpha`, `lts`, `edge`. |
-| `version` | string | no | _(latest)_ | Pin to a specific Flatcar version, e.g. `"3510.2.8"`. Omit to use the latest for the channel. |
+| `os` | string | no | `"flatcar"` | Target OS. One of `"flatcar"` (default) or `"fcos"` (Fedora CoreOS). |
+| `channel` | string | no | `"stable"` | Release channel. Flatcar: `stable`, `beta`, `alpha`, `lts`, `edge`. FCOS: `stable`, `testing`, `next`. |
+| `version` | string | no | _(latest)_ | Pin to a specific Flatcar version, e.g. `"3510.2.8"`. Omit to use the latest for the channel. **Not supported for FCOS** (ignored with warning). |
 | `hostname` | string | yes | — | Machine hostname. Must be a valid RFC 1123 hostname label. |
 | `disk` | string | yes* | — | Target disk path. Use a stable `/dev/disk/by-id/...` path in production. `*` Not required when `ignition_url` is set. |
 | `network` | object | yes | — | See [Network](#network). |
@@ -87,7 +105,7 @@ This document is the authoritative reference for every field in that file.
 | `arch` | string | no | `"amd64"` | CPU architecture. One of `amd64`, `arm64`. `arm64` is not available on the `lts` channel. |
 | `timezone` | string | no | `"UTC"` | System timezone (IANA format, e.g. `"America/New_York"`). |
 | `sysexts` | string[] | no | `[]` | List of system extension names from the bakery catalog (e.g. `["docker", "kubernetes"]`). |
-| `nvidia_driver_version` | string | no | _(none)_ | NVIDIA kernel driver series. One of `570-open` (default/recommended), `550-open`, `535-open`, `460`. Omit to skip NVIDIA setup. |
+| `nvidia_driver_version` | string | no | _(none)_ | NVIDIA kernel driver series. One of `570-open` (default/recommended), `550-open`, `535-open`, `460`. Omit to skip NVIDIA setup. **Flatcar only** — rejected for FCOS. |
 | `tailscale` | object | no | — | See [Tailscale](#tailscale). Omit or leave `auth_key` blank to skip. |
 | `swap` | object | no | _(enabled, 4 GiB)_ | See [Swap](#swap). Omit for the default (4 GiB enabled). |
 | `ignition_url` | string | no | — | URL of an external Ignition config. When set, knuckle downloads this config instead of generating one — only `disk` is then required. Must be HTTPS. |
