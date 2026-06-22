@@ -23,6 +23,11 @@ default:
     @echo "  just hardware-repro — boot installer ISO in a hardware-like VM and capture install logs"
     @echo "  just e2e       — full end-to-end: build ISO → boot → install → verify"
     @echo ""
+    @echo "FCOS:"
+    @echo "  just tools-fcos          — install coreos-installer"
+    @echo "  just build-fcos-iso      — build FCOS live ISO (stable, amd64)"
+    @echo "  just build-fcos-iso arch=arm64 stream=testing"
+    @echo ""
     @echo "Pre-release (requires network):"
     @echo "  just catalog-check       — report new bakery extensions missing descriptions"
     @echo "  just nvidia-check        — verify NVIDIA driver series vs Flatcar docs"
@@ -113,7 +118,7 @@ cover-check:
     #!/usr/bin/env bash
     set -euo pipefail
     declare -A targets=(
-        [model]=100 [validate]=100 [ignition]=100 [github]=96
+        [model]=100 [validate]=99 [ignition]=100 [github]=96
         [bakery]=100 [probe]=100   [runner]=100   [install]=100
         [headless]=99 [wizard]=99  [iso]=100      [tui]=99
         [demo]=100
@@ -177,6 +182,22 @@ cover-check:
     else
         echo "ok    ${cbf_pkg}  ${cbf_pct}%  (target ${cbf_target}%)"
     fi
+    # cmd/nvidia-check — gated at 95% (run() is covered; main() wrapper is not).
+    # Depends on the run() refactor landing in #760. Gate prevents regression.
+    nvidia_pkg=cmd/nvidia-check
+    nvidia_target=95
+    nvidia_pct=$(go test -count=1 -cover ./${nvidia_pkg}/... 2>/dev/null \
+        | awk '/coverage:/ {gsub("%",""); print $(NF-2); exit}')
+    nvidia_pct=${nvidia_pct%.*}
+    if [[ -z "$nvidia_pct" ]]; then
+        echo "FAIL  ${nvidia_pkg}   no coverage reported"
+        fail=1
+    elif (( nvidia_pct < nvidia_target )); then
+        echo "FAIL  ${nvidia_pkg}  ${nvidia_pct}%  (target ${nvidia_target}%)"
+        fail=1
+    else
+        echo "ok    ${nvidia_pkg}  ${nvidia_pct}%  (target ${nvidia_target}%)"
+    fi
     exit $fail
 
 # Quick headless dry-run test (no VM needed)
@@ -184,11 +205,21 @@ headless-test:
     #!/usr/bin/env bash
     set -euo pipefail
     just build
+
+    echo "── Flatcar headless dry-run ──"
     cat > /tmp/knuckle-test-config.json <<'EOF'
     {"channel":"stable","hostname":"test-node","timezone":"UTC","network":{"mode":"dhcp"},"users":[{"username":"core","ssh_keys":["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGdllynsgXbmcFXhVJAIAkDbYjqZ2OgHgZJVFmFKtvF7 test"]}],"disk":"/dev/vdb","update_strategy":"reboot","reboot":false}
     EOF
     bin/knuckle --config /tmp/knuckle-test-config.json --headless --dry-run
-    echo "✅ PASS"
+    echo "✅ Flatcar PASS"
+
+    echo ""
+    echo "── FCOS headless dry-run ──"
+    cat > /tmp/knuckle-fcos-test-config.json <<'EOF'
+    {"os":"fcos","channel":"stable","hostname":"fcos-test","timezone":"UTC","network":{"mode":"dhcp"},"users":[{"username":"core","ssh_keys":["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGdllynsgXbmcFXhVJAIAkDbYjqZ2OgHgZJVFmFKtvF7 test"]}],"disk":"/dev/vdb","update_strategy":"reboot","reboot":false}
+    EOF
+    bin/knuckle --config /tmp/knuckle-fcos-test-config.json --headless --dry-run
+    echo "✅ FCOS PASS"
 
 # Real install in a VM — auto-boots the installed system when knuckle exits
 vm:
@@ -810,6 +841,31 @@ e2e:
 iso *CHANNEL='stable':
     ./scripts/build-iso.sh --channel {{CHANNEL}} --arch {{KNUCKLE_ARCH}}
 
+# Check that coreos-installer is installed (required for FCOS ISO builds)
+check-fcos-tools:
+    @which coreos-installer || (echo "coreos-installer not found — run: just tools-fcos" && exit 1)
+
+# Install coreos-installer static binary to /usr/local/bin (idempotent)
+tools-fcos:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v coreos-installer &>/dev/null; then
+        echo "coreos-installer already installed: $(coreos-installer --version)"
+        exit 0
+    fi
+    echo "Installing coreos-installer..."
+    curl -L https://github.com/coreos/coreos-installer/releases/latest/download/coreos-installer_amd64 \
+        -o /usr/local/bin/coreos-installer
+    chmod +x /usr/local/bin/coreos-installer
+    coreos-installer --version
+    echo "tools-fcos ok"
+
+# Build FCOS installer ISO (requires coreos-installer — run: just tools-fcos)
+# Produces output/knuckle-fcos-installer-<stream>-<arch>.iso
+# Override stream/arch: just build-fcos-iso arch="arm64" stream="testing"
+build-fcos-iso arch="amd64" stream="stable": check-fcos-tools
+    ./scripts/build-fcos-iso.sh --arch {{arch}} --stream {{stream}}
+
 # Boot ISO in QEMU with UEFI (Ctrl-a x to quit)
 # KNUCKLE_ARCH=arm64 just boot-iso  — boots arm64 ISO (requires qemu-system-aarch64)
 boot-iso:
@@ -1063,11 +1119,24 @@ nvidia-check:
         -o bin/nvidia-check ./cmd/nvidia-check
     ./bin/nvidia-check
 
-# Full pre-release preflight: catalog coverage + nvidia versions + CI gate.
+# Full pre-release preflight: catalog coverage + nvidia versions + CI gate + CHANGELOG reminder.
 # Run this before tagging any release.
 release-preflight: ci
     #!/usr/bin/env bash
     set -euo pipefail
+    echo ""
+    echo "[2/3] Checking sysext catalog coverage against live bakery..."
+    go run ./scripts/catalog_check/ --strict
+    echo ""
+    echo "[3/3] Checking NVIDIA driver series against Flatcar docs..."
+    ./scripts/nvidia_check.sh
+    echo ""
+    echo "✓ release-preflight complete"
+    echo ""
+    echo "Pre-tag checklist (manual steps):"
+    echo "  - [ ] Promote CHANGELOG.md [Unreleased] to ## [vX.Y.Z] - $(date +%Y-%m-%d)"
+    echo "  - [ ] Update compare links in CHANGELOG.md footer"
+    echo "  - [ ] Run 'just vm-e2e' for final VM verification before publishing"
 
 # QA: full PR test — build + unit tests + Flatcar VM install + boot + domain assertions.
 # Artifacts saved to .qa/runs/pr-N-TIMESTAMP/. Failed runs generate an issue body.

@@ -11,9 +11,9 @@
 
 ## What This Repo Is
 
-A TUI installer for [Flatcar Container Linux](https://www.flatcar.org/), targeting bare-metal.
+A TUI installer for [Flatcar Container Linux](https://www.flatcar.org/) and [FCOS](https://fedoraproject.org/coreos/), targeting bare-metal.
 Built in Go on charm.sh (Bubble Tea v2, Lip Gloss v2, Huh v2). Assembles an Ignition config
-and hands off to `flatcar-install` — knuckle never writes partitions itself.
+and dispatches to `flatcar-install` (Flatcar) or `coreos-installer` (FCOS) via `DispatchingInstaller` — knuckle never writes partitions itself.
 
 - **Module:** `github.com/projectbluefin/knuckle` (Go 1.26+)
 - **License:** Apache-2.0
@@ -62,6 +62,8 @@ just e2e                 # build ISO → boot in QEMU GTK window → interactive
 
 `just ci` is the pre-push gate. Never `--no-verify`.
 
+**Pre-commit guard:** `no-floating-action-tags` blocks third-party `@main`/`@v*` floating action tags at commit time. `projectbluefin/` refs (`@v1`, `@main`) are intentional managed tags and are exempted.
+
 ---
 
 ## Safety Invariants ⛔
@@ -85,10 +87,10 @@ Coverage gates are authoritative in [`docs/CI-AND-TESTING.md`](docs/CI-AND-TESTI
 | `internal/runner`   | `Runner` interface: `RealRunner`, `DryRunner`, `SpyRunner`        |
 | `internal/probe`    | `lsblk` + `ip addr` JSON parsing, `/dev/disk/by-id` resolution   |
 | `internal/validate` | Hostname, CIDR, gateway, SSH key, timezone, disk path validators  |
-| `internal/bakery`   | sysext catalog + Flatcar release/SBOM fetchers, SHA512 + GPG check|
+| `internal/bakery`   | `DispatchingClient` routing to Flatcar or FCOS bakery clients; sysext catalog + release/SBOM fetchers, SHA512 + GPG check|
 | `internal/github`   | SSH key fetch + GitHub Releases API client                        |
 | `internal/ignition` | Butane assembly + in-process Butane→Ignition compilation          |
-| `internal/install`  | `flatcar-install` orchestration via runner                        |
+| `internal/install`  | `DispatchingInstaller` routing to `FlatcarInstaller` or `FCOSInstaller` via runner |
 | `internal/iso`      | Installer ISO builder helpers                                     |
 | `internal/headless` | `--headless --config` JSON-driven install path                    |
 | `internal/wizard`   | Step state machine, navigation, validation gates                  |
@@ -132,11 +134,13 @@ tui      ← cmd/knuckle
 2. **Declare SCOPE / GOAL / OUT OF SCOPE** before editing.
 3. **One PR per issue.** Branch `feat/<slug>` or `fix/<slug>`. Conventional commits (`feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `ci:`, `chore:`).
 4. **`just ci` is the gate.** If it fails, fix it; don't push.
-5. **Push to `origin` (projectbluefin/knuckle) only.** No upstream pushes from automation.
-6. **Governance PRs from hive agents** may contain stray Go source changes from a diverged upstream base. When merging, inspect `git diff origin/main --name-only` and strip any Go source files — keep only the intended config file (workflow yml, CODEOWNERS, issue template, etc.). Use `--admin` merge if needed.
-7. **Workflow files (`.github/workflows/*.yml`):** security-sensitive, cannot be auto-merged. Coordinate via PR description.
-7. **New external command?** Wire through `runner.Runner`. Period.
-8. **New disk-touching code?** Test in QEMU via `just vm` or `just vm-e2e`. Unit tests use `SpyRunner`.
+5. **After pushing, verify CI is green before claiming done:** `gh run list --repo projectbluefin/knuckle --limit 5` — read the output; running or failing = not done. "Done" means CI green, not "I pushed."
+6. **Never claim a task complete without verifying.** "I've updated the file" is not done. Run the checks. Read the output.
+7. **Push to `origin` (projectbluefin/knuckle) only.** No upstream pushes from automation.
+8. **Governance PRs from hive agents** may contain stray Go source changes from a diverged upstream base. When merging, inspect `git diff origin/main --name-only` and strip any Go source files — keep only the intended config file (workflow yml, CODEOWNERS, issue template, etc.). Use `--admin` merge if needed.
+9. **Workflow files (`.github/workflows/*.yml`):** security-sensitive, cannot be auto-merged. Coordinate via PR description.
+9. **New external command?** Wire through `runner.Runner`. Period.
+10. **New disk-touching code?** Test in QEMU via `just vm` or `just vm-e2e`. Unit tests use `SpyRunner`.
 
 ---
 
@@ -165,6 +169,10 @@ See [`docs/SKILL.md`](docs/SKILL.md) for the full task-to-skill routing table.
 | Sysext catalog, Bakery support tiers, extension behavior | [`docs/SYSEXTS.md`](docs/SYSEXTS.md) |
 | Troubleshooting runbook, first-boot diagnostics | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Butane-as-library rationale | [`docs/BUTANE-DEPENDENCY.md`](docs/BUTANE-DEPENDENCY.md) |
+
+## Release Checklist
+
+Before tagging any release, use [`docs/RELEASE.md`](docs/RELEASE.md) as the canonical pre-release gate for required checks, VM verification, and blocker history.
 
 ---
 

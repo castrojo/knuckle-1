@@ -44,7 +44,7 @@
 | `internal/iso`               |  100%  | 100% | (n/a)                     |
 | `internal/runner`            |  100%  | 100% | ≥ 80%                     |
 | `internal/demo`              |  100%  | 100% | (n/a)                     |
-| `internal/validate`          |  100%  | 100% | ≥ 95%                     |
+| `internal/validate`          |  99.5% |  99% | ≥ 95%                     |
 | `internal/probe`             |  100%  | 100% | ≥ 85%                     |
 | `internal/install`           |  100%  | 100% | ≥ 80%                     |
 | `internal/ignition`          |  100%  | 100% | ≥ 90%                     |
@@ -54,6 +54,9 @@
 | `internal/headless`          |  99%   |  99% | (n/a)                     |
 | `internal/tui`               |  98.7% |  98% | ≥ 85%                     |
 | `internal/github`            |  97%   |  96% | (n/a)                     |
+| `cmd/knuckle`                |  ~85%  |  85% | (n/a)                     |
+| `cmd/compile-butane-fresh`   |  100%  | 100% | (n/a)                     |
+| `cmd/nvidia-check`           |  98.9% |  95% | (n/a) — depends on #760   |
 
 Gates are set conservatively below current numbers so CI fails on
 **regression**, not on aspirational drift. When a package's actual coverage
@@ -360,4 +363,3 @@ Tracked in `docs/REVIEW-2026-05-19.md` (passes 1-2) and session notes from
 - Verify `ens3` vs `eth0` interface name in static-network vm-e2e pass.
 - Add fixture gaps: `lsblk-empty.json`, `lsblk-all-removable.json`,
   `ip_addr-ipv6-only.json`, `bakery-malformed-digests` (from QA review).
-- ~~Raise `tui` coverage (currently 52%)~~ **Done** — `internal/tui` reached 95.6% (gate: 94%). PR #521 adds form-state and render branch tests.
